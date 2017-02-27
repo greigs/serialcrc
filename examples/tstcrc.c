@@ -40,66 +40,103 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+
+
 
 #include "../include/checksum.h"
 
 #define MAX_STRING_SIZE	2048
 
-/*
- * int main( int argc, char *argv[] );
- *
- * The function main() is the entry point of the example program which
- * calculates several CRC values from the contents of files, or data from
- * stdin.
- */
 
-int main( int argc, char *argv[] ) {
+
+#define DISPLAY_STRING
+
+int set_interface_attribs(int fd, int speed)
+{
+        struct termios tty;
+
+        if (tcgetattr(fd, &tty) < 0) {
+                printf("Error from tcgetattr: %s\n", strerror(errno));
+                return -1;
+        }
+
+        cfsetospeed(&tty, (speed_t)speed);
+        cfsetispeed(&tty, (speed_t)speed);
+
+        tty.c_cflag |= (CLOCAL | CREAD);    /* ignore modem controls */
+        tty.c_cflag &= ~CSIZE;
+        tty.c_cflag |= CS8;         /* 8-bit characters */
+        tty.c_cflag &= ~PARENB;     /* no parity bit */
+        tty.c_cflag &= ~CSTOPB;     /* only need 1 stop bit */
+        tty.c_cflag &= ~CRTSCTS;    /* no hardware flowcontrol */
+
+                                                                /* setup for non-canonical mode */
+        tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+        tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+        tty.c_oflag &= ~OPOST;
+
+        /* fetch bytes as they become available */
+        tty.c_cc[VMIN] = 1;
+        tty.c_cc[VTIME] = 1;
+
+        if (tcsetattr(fd, TCSANOW, &tty) != 0) {
+                //printf("Error from tcsetattr: %s\n", strerror(errno));
+                return -1;
+        }
+        return 0;
+}
+
+void set_mincount(int fd, int mcount)
+{
+        struct termios tty;
+
+        if (tcgetattr(fd, &tty) < 0) {
+                //printf("Error tcgetattr: %s\n", strerror(errno));
+                return;
+        }
+
+        tty.c_cc[VMIN] = mcount ? 1 : 0;
+        tty.c_cc[VTIME] = 5;        /* half second timer */
+
+        if (tcsetattr(fd, TCSANOW, &tty) < 0)
+		{
+			//printf("Error tcsetattr: %s\n", strerror(errno));
+		}
+            
+}
+
+uint32_t calc_crc32(char inData[])
+{
+
+
 
 	char input_string[MAX_STRING_SIZE];
 	unsigned char *ptr;
 	unsigned char *dest;
-	unsigned char hex_val;
-	unsigned char prev_byte;
-	uint16_t crc_16_val;
-	uint16_t crc_16_modbus_val;
-	uint16_t crc_ccitt_ffff_val;
-	uint16_t crc_ccitt_0000_val;
-	uint16_t crc_ccitt_1d0f_val;
-	uint16_t crc_dnp_val;
-	uint16_t crc_sick_val;
-	uint16_t crc_kermit_val;
+
 	uint32_t crc_32_val;
-	uint16_t low_byte;
-	uint16_t high_byte;
-	int a;
-	int ch;
+
 	bool do_ascii;
 	bool do_hex;
-	FILE *fp;
 
-	do_ascii = false;
+
+	do_ascii = true;
 	do_hex   = false;
 
-	printf( "\ntstcrc: CRC algorithm sample program\nCopyright (c) 1999-2016 Lammert Bies\n\n" );
-
-	if ( argc < 2 ) {
-
-		printf( "Usage: tst_crc [-a|-x] file1 ...\n\n" );
-		printf( "    -a Program asks for ASCII input. Following parameters ignored.\n" );
-		printf( "    -x Program asks for hexadecimal input. Following parameters ignored.\n" );
-		printf( "       All other parameters are treated like filenames. The CRC values\n" );
-		printf( "       for each separate file will be calculated.\n" );
-
-		exit( 0 );
-	}
-
-	if ( ! strcmp( argv[1], "-a" )  ||  ! strcmp( argv[1], "-A" ) ) do_ascii = true;
-	if ( ! strcmp( argv[1], "-x" )  ||  ! strcmp( argv[1], "-X" ) ) do_hex   = true;
-
+	
 	if ( do_ascii  ||  do_hex ) {
 
 		printf( "Input: " );
-		fgets( input_string, MAX_STRING_SIZE-1, stdin );
+                //input_string = inData;
+		char* res = inData; //fgets( input_string, MAX_STRING_SIZE-1, stdin );
+                if (res)
+                {
+                }
 	}
 
 	if ( do_ascii ) {
@@ -127,145 +164,293 @@ int main( int argc, char *argv[] ) {
 		*(dest+1) = '\x80';
 	}
 
-	a = 1;
 
-	do {
 
-		crc_16_val         = 0x0000;
-		crc_16_modbus_val  = 0xffff;
-		crc_dnp_val        = 0x0000;
-		crc_sick_val       = 0x0000;
-		crc_ccitt_0000_val = 0x0000;
-		crc_ccitt_ffff_val = 0xffff;
-		crc_ccitt_1d0f_val = 0x1d0f;
-		crc_kermit_val     = 0x0000;
-		crc_32_val         = 0xffffffffL;
+	
+		crc_32_val = 0xffffffffL;
 
 
 
 		if ( do_ascii ) {
-
-			prev_byte = 0;
 			ptr       = (unsigned char *) input_string;
 
 			while ( *ptr ) {
-
-				crc_16_val         = update_crc_16(     crc_16_val,         *ptr            );
-				crc_16_modbus_val  = update_crc_16(     crc_16_modbus_val,  *ptr            );
-				crc_dnp_val        = update_crc_dnp(    crc_dnp_val,        *ptr            );
-				crc_sick_val       = update_crc_sick(   crc_sick_val,       *ptr, prev_byte );
-				crc_ccitt_0000_val = update_crc_ccitt(  crc_ccitt_0000_val, *ptr            );
-				crc_ccitt_ffff_val = update_crc_ccitt(  crc_ccitt_ffff_val, *ptr            );
-				crc_ccitt_1d0f_val = update_crc_ccitt(  crc_ccitt_1d0f_val, *ptr            );
-				crc_kermit_val     = update_crc_kermit( crc_kermit_val,     *ptr            );
-				crc_32_val         = update_crc_32(     crc_32_val,         *ptr            );
-
-				prev_byte = *ptr;
+                                printf("a");
+				crc_32_val = update_crc_32(crc_32_val,*ptr);
 				ptr++;
 			}
 		}
+		crc_32_val ^= 0xffffffffL;
+		printf( "CRC32 = 0x%08" PRIX32 "  /  %" PRIu32 "\n", crc_32_val, crc_32_val);
+        
 
-		else if ( do_hex ) {
+	return crc_32_val;
 
-			prev_byte = 0;
-			ptr       = (unsigned char *) input_string;
 
-			while ( *ptr != '\x80' ) {
+}
 
-				hex_val  = (unsigned char) ( ( * ptr     &  '\x0f' ) << 4 );
-				hex_val |= (unsigned char) ( ( *(ptr+1)  &  '\x0f' )      );
 
-				crc_16_val         = update_crc_16(     crc_16_val,         hex_val            );
-				crc_16_modbus_val  = update_crc_16(     crc_16_modbus_val,  hex_val            );
-				crc_dnp_val        = update_crc_dnp(    crc_dnp_val,        hex_val            );
-				crc_sick_val       = update_crc_sick(   crc_sick_val,       hex_val, prev_byte );
-				crc_ccitt_0000_val = update_crc_ccitt(  crc_ccitt_0000_val, hex_val            );
-				crc_ccitt_ffff_val = update_crc_ccitt(  crc_ccitt_ffff_val, hex_val            );
-				crc_ccitt_1d0f_val = update_crc_ccitt(  crc_ccitt_1d0f_val, hex_val            );
-				crc_kermit_val     = update_crc_kermit( crc_kermit_val,     hex_val            );
-				crc_32_val         = update_crc_32(     crc_32_val,         hex_val            );
+/*
+ * int main( int argc, char *argv[] );
+ *
+ * The function main() is the entry point of the example program which
+ * calculates several CRC values from the contents of files, or data from
+ * stdin.
+ */
 
-				prev_byte = hex_val;
-				ptr      += 2;
-			}
+int main(void) {
 
-			input_string[0] = 0;
-		}
 
-		else {
 
-			prev_byte = 0;
-#if defined(_MSC_VER)
-			fp = NULL;
-			fopen_s( & fp, argv[a], "rb" );
-#else
-			fp = fopen( argv[a], "rb" );
-#endif
 
-			if ( fp != NULL ) {
 
-				while( ( ch=fgetc( fp ) ) != EOF ) {
+        const char *portname = "/dev/ttyGS0";
+        int fd;
+        unsigned int wlen;
 
-					crc_16_val         = update_crc_16(     crc_16_val,         (unsigned char) ch            );
-					crc_16_modbus_val  = update_crc_16(     crc_16_modbus_val,  (unsigned char) ch            );
-					crc_dnp_val        = update_crc_dnp(    crc_dnp_val,        (unsigned char) ch            );
-					crc_sick_val       = update_crc_sick(   crc_sick_val,       (unsigned char) ch, prev_byte );
-					crc_ccitt_0000_val = update_crc_ccitt(  crc_ccitt_0000_val, (unsigned char) ch            );
-					crc_ccitt_ffff_val = update_crc_ccitt(  crc_ccitt_ffff_val, (unsigned char) ch            );
-					crc_ccitt_1d0f_val = update_crc_ccitt(  crc_ccitt_1d0f_val, (unsigned char) ch            );
-					crc_kermit_val     = update_crc_kermit( crc_kermit_val,     (unsigned char) ch            );
-					crc_32_val         = update_crc_32(     crc_32_val,         (unsigned char) ch            );
+        fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+        if (fd < 0) {
+                printf("Error opening %s: %s\n", portname, strerror(errno));
+                return -1;
+        }
+        /*baudrate 115200, 8 bits, no parity, 1 stop bit */
+        set_interface_attribs(fd, B115200);
+        //set_mincount(fd, 0);                /* set to pure timed read */
 
-					prev_byte = (unsigned char) ch;
-				}
 
-				fclose( fp );
-			}
 
-			else printf( "%s : cannot open file\n", argv[a] );
-		}
 
-		crc_32_val        ^= 0xffffffffL;
+        /* simple output */
+        wlen = write(fd, "%READY%", 7);
+        if (wlen != 7) {
+                printf("Error from write: %d, %d\n", wlen, errno);
+        }
+        tcdrain(fd);    /* delay for output */
 
-		crc_dnp_val    = ~crc_dnp_val;
-		low_byte       = (crc_dnp_val    & 0xff00) >> 8;
-		high_byte      = (crc_dnp_val    & 0x00ff) << 8;
-		crc_dnp_val    = low_byte | high_byte;
 
-		low_byte       = (crc_sick_val   & 0xff00) >> 8;
-		high_byte      = (crc_sick_val   & 0x00ff) << 8;
-		crc_sick_val   = low_byte | high_byte;
 
-		low_byte       = (crc_kermit_val & 0xff00) >> 8;
-		high_byte      = (crc_kermit_val & 0x00ff) << 8;
-		crc_kermit_val = low_byte | high_byte;
 
-		printf( "%s%s%s :\nCRC16              = 0x%04" PRIX16 "      /  %" PRIu16 "\n"
-				  "CRC16 (Modbus)     = 0x%04" PRIX16 "      /  %" PRIu16 "\n"
-				  "CRC16 (Sick)       = 0x%04" PRIX16 "      /  %" PRIu16 "\n"
-				  "CRC-CCITT (0x0000) = 0x%04" PRIX16 "      /  %" PRIu16 "\n"
-				  "CRC-CCITT (0xffff) = 0x%04" PRIX16 "      /  %" PRIu16 "\n"
-				  "CRC-CCITT (0x1d0f) = 0x%04" PRIX16 "      /  %" PRIu16 "\n"
-				  "CRC-CCITT (Kermit) = 0x%04" PRIX16 "      /  %" PRIu16 "\n"
-				  "CRC-DNP            = 0x%04" PRIX16 "      /  %" PRIu16 "\n"
-				  "CRC32              = 0x%08" PRIX32 "  /  %" PRIu32 "\n"
-				, (   do_ascii  ||    do_hex ) ? "\""    : ""
-				, ( ! do_ascii  &&  ! do_hex ) ? argv[a] : input_string
-				, (   do_ascii  ||    do_hex ) ? "\""    : ""
-				, crc_16_val,         crc_16_val
-				, crc_16_modbus_val,  crc_16_modbus_val
-				, crc_sick_val,       crc_sick_val
-				, crc_ccitt_0000_val, crc_ccitt_0000_val
-				, crc_ccitt_ffff_val, crc_ccitt_ffff_val
-				, crc_ccitt_1d0f_val, crc_ccitt_1d0f_val
-				, crc_kermit_val,     crc_kermit_val
-				, crc_dnp_val,        crc_dnp_val
-				, crc_32_val,         crc_32_val     );
 
-		a++;
+        char bufsm2[8];
+        //printf("1");
+        unsigned int rdlensm2 = read(fd, bufsm2, sizeof(bufsm2));
+        if (rdlensm2 < 1)
+        {
+        }
+        while ((strncmp("%IGNORE%", bufsm2, 8) == 0) ||
+                (strncmp("IGNORE%%", bufsm2, 8) == 0) ||
+                (strncmp("GNORE%%I", bufsm2, 8) == 0) ||
+                (strncmp("NORE%%IG", bufsm2, 8) == 0) ||
+                (strncmp("ORE%%IGN", bufsm2, 8) == 0) ||
+                (strncmp("RE%%IGNO", bufsm2, 8) == 0) ||
+                (strncmp("E%%IGNOR", bufsm2, 8) == 0) ||
+                (strncmp("%%IGNORE", bufsm2, 8) == 0))
+        {
+                //printf("2");
+                rdlensm2 = read(fd, bufsm2, sizeof(bufsm2));
+                if (rdlensm2 < 1)
+                {
+                }
+        }
+        int totalBytes = 0;
 
-	} while ( a < argc );
+        char buf[4096];
+        char smallbuf[8];
+        char tinybuf[8];
 
-	return 0;
+        //printf("3");
+        while (1)
+        {
+                buf[sizeof(buf) - 26] = ' ';
+                buf[sizeof(buf) - 25] = ' ';
+                buf[sizeof(buf) - 24] = ' ';
+
+                char bufsm[6] = "";
+                //printf("4");
+                unsigned int rdlensm = read(fd, bufsm, sizeof(bufsm));
+                if (rdlensm < 1)
+                {
+                }
+                //printf(bufsm);
+
+                int tries = 0;
+                while ((strncmp("!rtppl", bufsm, 6) != 0) &&
+                        (strncmp("rtppla", bufsm, 6) != 0) &&
+                        (strncmp("tpplay", bufsm, 6) != 0) &&
+                        (strncmp("pplay1", bufsm, 6) != 0) &&
+                        (strncmp("play1.", bufsm, 6) != 0) &&
+                        (strncmp("lay1.0", bufsm, 6) != 0))
+                {
+//                      printf(bufsm);
+//                        printf(" %d ",(strcmp("!rtppl", bufsm)));
+//                        printf(" %d ",(strcmp("rtppla", bufsm)));
+//                        printf(" %d ",(strcmp("tpplay", bufsm)));
+//                        printf(" %d ",(strcmp("pplay1", bufsm)));
+//                        printf(" %d ",(strcmp("play1.", bufsm)));
+//                        printf(" %d ",(strcmp("lay1.0", bufsm)));
+
+//                        printf("\n");
+                        rdlensm = read(fd, bufsm, sizeof(bufsm));
+                        if (rdlensm < 1)
+                        {
+                        }
+                        tries += 1;
+                        if (tries == 100)
+                        {
+                                printf(" ALLTRIES ");
+                                wlen = write(fd, "00000000 CRC ERROR", 18);
+                                tcdrain(fd);    /* delay for output */
+                                wlen = write(fd, "%READY%", 7);
+                                tcdrain(fd);
+                                tries = 0;
+                        }
+
+                }
+
+                int read_bytes;
+
+                if ((strncmp("!rtppl", bufsm, 6) == 0)) {
+                        read_bytes = read(fd, bufsm, 5);
+                        if (read_bytes < 1)
+                        {
+                        }
+                }
+                else if ((strncmp("rtppla", bufsm, 6) == 0)) {
+                        read_bytes = read(fd, bufsm, 4);
+                        if (read_bytes < 1)
+                        {
+                        }
+                }
+                else if ((strncmp("tpplay", bufsm, 6) == 0)) {
+                        read_bytes = read(fd, bufsm, 3);
+                        if (read_bytes < 1)
+                        {
+                        }
+                }
+                else if ((strncmp("pplay1", bufsm, 6) == 0)) {
+                        read_bytes = read(fd, bufsm, 2);
+                        if (read_bytes < 1)
+                        {
+                        }
+                }
+                else if ((strncmp("play1.", bufsm, 6) == 0)) {
+                        read_bytes = read(fd, bufsm, 1);
+                        if (read_bytes < 1)
+                        {
+                        }
+                }
+
+
+                //printf("START");
+
+                /* simple noncanonical input */
+                int i = 0, j = 0;
+
+                int readEnough = 0, crcString = 0;
+                while (i < ((int)sizeof(buf) - (int)sizeof(smallbuf)) && !readEnough)
+                {
+						
+
+                        int rdlen;
+
+                        rdlen = read(fd, smallbuf, (int)sizeof(smallbuf));
+                        if (rdlen > 0) {
+
+                                for (j = 0; j<rdlen; j++) {
+                                        buf[i + j] = smallbuf[j];
+                                }
+                                for (j = rdlen; j< (int)sizeof(smallbuf); j++) {
+                                        smallbuf[j] = ' ';
+                                }
+
+                                // copy first 8 bytes
+
+                                tinybuf[0] = smallbuf[0];
+								tinybuf[1] = smallbuf[1];
+								tinybuf[2] = smallbuf[2];
+								tinybuf[3] = smallbuf[3];
+								tinybuf[4] = smallbuf[4];
+								tinybuf[5] = smallbuf[5];
+								tinybuf[6] = smallbuf[6];
+								tinybuf[7] = smallbuf[7];
+
+
+                                // issue: want to increase the small buffer
+                                if ((strncmp("%IGNORE%", tinybuf, 8) == 0) ||
+                                        (strncmp("IGNORE%%", tinybuf, 8) == 0) ||
+                                        (strncmp("GNORE%%I", tinybuf, 8) == 0) ||
+                                        (strncmp("NORE%%IG", tinybuf, 8) == 0) ||
+                                        (strncmp("ORE%%IGN", tinybuf, 8) == 0) ||
+                                        (strncmp("RE%%IGNO", tinybuf, 8) == 0) ||
+                                        (strncmp("E%%IGNOR", tinybuf, 8) == 0) ||
+                                        (strncmp("%%IGNORE", tinybuf, 8) == 0))
+                                {
+                                        printf("BREAK");
+                                        break;
+                                }
+                                else
+                                {
+                                        i += rdlen;
+                                        //printf("Read %d (%d): \"%s\"\n", rdlen, i, smallbuf);
+                                        if (i >= ((int)(sizeof(buf) - 16)))
+                                        {
+                                                readEnough = 1;
+                                                if ((char)buf[sizeof(buf) - 26] == 'C' && (char)buf[sizeof(buf) - 25] == 'R' && (char)buf[sizeof(buf) - 24] == 'C')
+                                                {
+                                                        crcString = 1;
+                                                }
+                                        }
+
+                                }
+
+
+                                //buf[rdlen] = 0;
+
+                        }
+                        else if (rdlen < 0) {
+                                //printf("Error from read: %d: %s\n", rdlen, strerror(errno));
+                        }
+                        /* repeat read to get full message */
+
+
+
+                }
+
+                if (crcString)
+                {
+                        totalBytes += sizeof(buf);
+
+                        //printf("(%d) ", totalBytes);
+						
+			//printf(buf,(sizeof(buf) - 16));
+                        uint32_t crcResult = calc_crc32(buf);
+                        printf("%d",crcResult);
+
+                        wlen = write(fd, "00000000 CRC ERROR", 18);
+                        tcdrain(fd);    /* delay for output */
+                        wlen = write(fd, "%READY%", 7);
+                        tcdrain(fd);
+
+
+                }
+                else
+                {
+
+
+                }
+        }
+
 
 }  /* main (tstcrc.c) */
+
+
+
+
+
+
+
+
+
+
+
+
