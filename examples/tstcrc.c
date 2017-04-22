@@ -110,12 +110,11 @@ void set_mincount(int fd, int mcount)
             
 }
 
-uint32_t calc_crc32(char inData[])
+uint32_t calc_crc32(char input_string[], int length)
 {
 
+ 
 
-
-	char input_string[MAX_STRING_SIZE];
 	unsigned char *ptr;
 	unsigned char *dest;
 
@@ -129,20 +128,11 @@ uint32_t calc_crc32(char inData[])
 	do_hex   = false;
 
 	
-	if ( do_ascii  ||  do_hex ) {
-
-		printf( "Input: " );
-                //input_string = inData;
-		char* res = inData; //fgets( input_string, MAX_STRING_SIZE-1, stdin );
-                if (res)
-                {
-                }
-	}
-
+            
 	if ( do_ascii ) {
 
 		ptr = (unsigned char *) input_string;
-		while ( *ptr  &&  *ptr != '\r'  &&  *ptr != '\n' ) ptr++;
+		while ( *ptr) ptr++;
 		*ptr = 0;
 	}
 
@@ -151,7 +141,7 @@ uint32_t calc_crc32(char inData[])
 		ptr  = (unsigned char *) input_string;
 		dest = (unsigned char *) input_string;
 
-		while( *ptr  &&  *ptr != '\r'  &&  *ptr != '\n' ) {
+		while( *ptr ) {
 
 			if ( *ptr >= '0'  &&  *ptr <= '9' ) *dest++ = (unsigned char) ( (*ptr) - '0'      );
 			if ( *ptr >= 'A'  &&  *ptr <= 'F' ) *dest++ = (unsigned char) ( (*ptr) - 'A' + 10 );
@@ -174,13 +164,19 @@ uint32_t calc_crc32(char inData[])
 		if ( do_ascii ) {
 			ptr       = (unsigned char *) input_string;
 
-			while ( *ptr ) {
-                                printf("a");
+			int i = 0;
+			for (i=0; i < length; i++) {
+
 				crc_32_val = update_crc_32(crc_32_val,*ptr);
+				
 				ptr++;
 			}
 		}
 		crc_32_val ^= 0xffffffffL;
+		printf( input_string);
+		printf("\n%d",sizeof(input_string));
+		printf( "\n%d\n",length);
+		printf( "CRC32 = %08" PRIX32, crc_32_val);
 		printf( "CRC32 = 0x%08" PRIX32 "  /  %" PRIu32 "\n", crc_32_val, crc_32_val);
         
 
@@ -232,7 +228,7 @@ int main(void) {
 
 
         char bufsm2[8];
-        //printf("1");
+        printf(" [1] ");
         unsigned int rdlensm2 = read(fd, bufsm2, sizeof(bufsm2));
         if (rdlensm2 < 1)
         {
@@ -246,7 +242,7 @@ int main(void) {
                 (strncmp("E%%IGNOR", bufsm2, 8) == 0) ||
                 (strncmp("%%IGNORE", bufsm2, 8) == 0))
         {
-                //printf("2");
+                printf(" [2] ");
                 rdlensm2 = read(fd, bufsm2, sizeof(bufsm2));
                 if (rdlensm2 < 1)
                 {
@@ -258,9 +254,10 @@ int main(void) {
         char smallbuf[8];
         char tinybuf[8];
 
-        //printf("3");
+        printf(" [3] ");
         while (1)
         {
+			    printf("\n");
                 buf[sizeof(buf) - 26] = ' ';
                 buf[sizeof(buf) - 25] = ' ';
                 buf[sizeof(buf) - 24] = ' ';
@@ -341,7 +338,7 @@ int main(void) {
                 }
 
 
-                //printf("START");
+                printf(" [START] ");
 
                 /* simple noncanonical input */
                 int i = 0, j = 0;
@@ -385,7 +382,7 @@ int main(void) {
                                         (strncmp("E%%IGNOR", tinybuf, 8) == 0) ||
                                         (strncmp("%%IGNORE", tinybuf, 8) == 0))
                                 {
-                                        printf("BREAK");
+                                        printf(" [BREAK] ");
                                         break;
                                 }
                                 else
@@ -422,9 +419,10 @@ int main(void) {
 
                         //printf("(%d) ", totalBytes);
 						
-			//printf(buf,(sizeof(buf) - 16));
-                        uint32_t crcResult = calc_crc32(buf);
-                        printf("%d",crcResult);
+			            //printf(buf,(sizeof(buf) - 16));
+                        uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 26);
+                        printf("\n%d\n",sizeof(buf) - 26);
+			printf("%d",crcResult);
 
                         wlen = write(fd, "00000000 CRC ERROR", 18);
                         tcdrain(fd);    /* delay for output */
@@ -442,15 +440,3 @@ int main(void) {
 
 
 }  /* main (tstcrc.c) */
-
-
-
-
-
-
-
-
-
-
-
-
