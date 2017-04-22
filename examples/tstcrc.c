@@ -422,9 +422,19 @@ int main(void) {
 			            //printf(buf,(sizeof(buf) - 16));
                         uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 26);
                         printf("\n%d\n",sizeof(buf) - 26);
-			printf("%d",crcResult);
-
-                        wlen = write(fd, "00000000 CRC ERROR", 18);
+			            printf("%d",crcResult);
+						int ok = 1;
+						if (ok){
+							char crc[18 * sizeof(char)];
+							sprintf(crc, "%08lX CRC OK!!!", (unsigned long) crcResult);
+							printf("THISCRC %s\n",crc);
+							wlen = write(fd, crc, 18);
+							
+						}
+						else{
+							wlen = write(fd, "00000000 CRC ERROR", 18);
+						}
+                        
                         tcdrain(fd);    /* delay for output */
                         wlen = write(fd, "%READY%", 7);
                         tcdrain(fd);
