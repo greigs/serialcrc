@@ -336,116 +336,171 @@ int main(void) {
                         {
                         }
                 }
+		int first = 1;
+		int minus = 11;
+                int minus2 = (int)sizeof(smallbuf);
+		int minus3 = 0;
+				
+				while (1)
+				{
+
+					//printf(" [START] ");
+
+					/* simple noncanonical input */
+					int i = 0, j = 0;
+					for (i=0; i< (int)sizeof(buf); i++)
+					{
+						buf[i] = '-';
+					}
+					i = 0;
 
 
-                printf(" [START] ");
-
-                /* simple noncanonical input */
-                int i = 0, j = 0;
-
-                int readEnough = 0, crcString = 0;
-                while (i < ((int)sizeof(buf) - (int)sizeof(smallbuf)) && !readEnough)
-                {
-						
-
-                        int rdlen;
-
-                        rdlen = read(fd, smallbuf, (int)sizeof(smallbuf));
-                        if (rdlen > 0) {
-
-                                for (j = 0; j<rdlen; j++) {
-                                        buf[i + j] = smallbuf[j];
-                                }
-                                for (j = rdlen; j< (int)sizeof(smallbuf); j++) {
-                                        smallbuf[j] = ' ';
-                                }
-
-                                // copy first 8 bytes
-
-                                tinybuf[0] = smallbuf[0];
-								tinybuf[1] = smallbuf[1];
-								tinybuf[2] = smallbuf[2];
-								tinybuf[3] = smallbuf[3];
-								tinybuf[4] = smallbuf[4];
-								tinybuf[5] = smallbuf[5];
-								tinybuf[6] = smallbuf[6];
-								tinybuf[7] = smallbuf[7];
-
-
-                                // issue: want to increase the small buffer
-                                if ((strncmp("%IGNORE%", tinybuf, 8) == 0) ||
-                                        (strncmp("IGNORE%%", tinybuf, 8) == 0) ||
-                                        (strncmp("GNORE%%I", tinybuf, 8) == 0) ||
-                                        (strncmp("NORE%%IG", tinybuf, 8) == 0) ||
-                                        (strncmp("ORE%%IGN", tinybuf, 8) == 0) ||
-                                        (strncmp("RE%%IGNO", tinybuf, 8) == 0) ||
-                                        (strncmp("E%%IGNOR", tinybuf, 8) == 0) ||
-                                        (strncmp("%%IGNORE", tinybuf, 8) == 0))
-                                {
-                                        printf(" [BREAK] ");
-                                        break;
-                                }
-                                else
-                                {
-                                        i += rdlen;
-                                        //printf("Read %d (%d): \"%s\"\n", rdlen, i, smallbuf);
-                                        if (i >= ((int)(sizeof(buf) - 16)))
-                                        {
-                                                readEnough = 1;
-                                                if ((char)buf[sizeof(buf) - 26] == 'C' && (char)buf[sizeof(buf) - 25] == 'R' && (char)buf[sizeof(buf) - 24] == 'C')
-                                                {
-                                                        crcString = 1;
-                                                }
-                                        }
-
-                                }
-
-
-                                //buf[rdlen] = 0;
-
-                        }
-                        else if (rdlen < 0) {
-                                //printf("Error from read: %d: %s\n", rdlen, strerror(errno));
-                        }
-                        /* repeat read to get full message */
-
-
-
-                }
-
-                if (crcString)
-                {
-                        totalBytes += sizeof(buf);
-
-                        //printf("(%d) ", totalBytes);
-						
-			            //printf(buf,(sizeof(buf) - 16));
-                        uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 26);
-                        printf("\n%d\n",sizeof(buf) - 26);
-			            printf("%d",crcResult);
-						int ok = 1;
-						if (ok){
-							char crc[18 * sizeof(char)];
-							sprintf(crc, "%08lX CRC OK!!!", (unsigned long) crcResult);
-							printf("THISCRC %s\n",crc);
-							wlen = write(fd, crc, 18);
+					int readEnough = 0, crcString = 0;
+					
+					while (i < ((int)sizeof(buf) - minus2) && !readEnough)
+					{
 							
-						}
-						else{
+
+							int rdlen;
+
+							rdlen = read(fd, smallbuf, (int)sizeof(smallbuf));
+							if (rdlen > 0) {
+
+									for (j = 0; j<rdlen; j++) {
+											buf[i + j] = smallbuf[j];
+									}
+									for (j = rdlen; j< (int)sizeof(smallbuf); j++) {
+											smallbuf[j] = ' ';
+									}
+
+									// copy first 8 bytes
+
+									tinybuf[0] = smallbuf[0];
+									tinybuf[1] = smallbuf[1];
+									tinybuf[2] = smallbuf[2];
+									tinybuf[3] = smallbuf[3];
+									tinybuf[4] = smallbuf[4];
+									tinybuf[5] = smallbuf[5];
+									tinybuf[6] = smallbuf[6];
+									tinybuf[7] = smallbuf[7];
+
+
+									// issue: want to increase the small buffer
+									if ((strncmp("%IGNORE%", tinybuf, 8) == 0) ||
+											(strncmp("IGNORE%%", tinybuf, 8) == 0) ||
+											(strncmp("GNORE%%I", tinybuf, 8) == 0) ||
+											(strncmp("NORE%%IG", tinybuf, 8) == 0) ||
+											(strncmp("ORE%%IGN", tinybuf, 8) == 0) ||
+											(strncmp("RE%%IGNO", tinybuf, 8) == 0) ||
+											(strncmp("E%%IGNOR", tinybuf, 8) == 0) ||
+											(strncmp("%%IGNORE", tinybuf, 8) == 0))
+									{
+											printf("b");
+											//printf(" [BREAK %s] ", tinybuf);
+											break;
+									}
+									else
+									{
+											
+											i += rdlen;
+
+											//printf("Read %d (%d): \"%s\"\n", rdlen, i, smallbuf);
+											if (i >= ((int)(sizeof(buf) - minus)))
+											{
+													readEnough = 1;
+													printf("\nREADENOUGH\n");
+													printf(buf);
+													if (first)
+													{
+													if ((char)buf[sizeof(buf) - 26] == 'C' && (char)buf[sizeof(buf) - 25] == 'R' && (char)buf[sizeof(buf) - 24] == 'C')
+													{
+															crcString = 1;
+															printf("1\n");
+															first = 0;
+															minus = 0;
+															minus2 = 0;
+	
+													}
+													}
+													else
+													{
+													if ((char)buf[sizeof(buf) - 11] == 'C' && (char)buf[sizeof(buf) - 10] == 'R' && (char)buf[sizeof(buf) - 9] == 'C')
+													{
+															crcString = 1;
+															printf("1\n");
+	
+													}														
+													}
+											}
+											printf("0");
+
+									}
+
+
+									//buf[rdlen] = 0;
+
+							}
+							else if (rdlen < 0) {
+									printf("Error from read: %d: %s\n", rdlen, strerror(errno));
+							}
+							/* repeat read to get full message */
+
+
+
+					}
+
+					if (crcString)
+					{
+							totalBytes += sizeof(buf);
+
+							//printf("(%d) ", totalBytes);
+							
+							//printf(buf,(sizeof(buf) - 16));
+							
+							//if (!first){ minus3 = 16;}
+							uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 26 + minus3);
+							printf("\n%d\n",sizeof(buf) - 26 + minus3);
+							printf("%d",crcResult);
+							char crcsmall[8 * sizeof(char)];
+							sprintf(crcsmall, "%08lX", (unsigned long) crcResult);
+							char crcPassedIn[8 * sizeof(char)];
+							crcPassedIn[0] = buf[sizeof(buf) - 23 + minus3];
+							crcPassedIn[1] = buf[sizeof(buf) - 22 + minus3];
+							crcPassedIn[2] = buf[sizeof(buf) - 21 + minus3];
+							crcPassedIn[3] = buf[sizeof(buf) - 20 + minus3];
+							crcPassedIn[4] = buf[sizeof(buf) - 19 + minus3];
+							crcPassedIn[5] = buf[sizeof(buf) - 18 + minus3];
+							crcPassedIn[6] = buf[sizeof(buf) - 17 + minus3] ;
+							crcPassedIn[7] = buf[sizeof(buf) - 16 + minus3];
+							int ok = strncmp(crcsmall, crcPassedIn, 8) == 0;
+							if (ok){
+								char crc[18 * sizeof(char)];
+								sprintf(crc, "%08lX CRC OK!!!", (unsigned long) crcResult);
+								printf("THISCRC %s\n",crc);
+								wlen = write(fd, crc, 18);
+								minus3 = 15;
+								
+							}
+							else{
+								printf("00000000 CRC ERROR");
+								wlen = write(fd, "00000000 CRC ERROR", 18);
+							}
+							
+							tcdrain(fd);    /* delay for output */
+							wlen = write(fd, "%READY%", 7);
+							tcdrain(fd);
+
+
+					}
+					else
+					{
 							wlen = write(fd, "00000000 CRC ERROR", 18);
-						}
-                        
-                        tcdrain(fd);    /* delay for output */
-                        wlen = write(fd, "%READY%", 7);
-                        tcdrain(fd);
+					                tcdrain(fd);    /* delay for output */
+							wlen = write(fd, "%READY%", 7);
+							tcdrain(fd);
 
-
-                }
-                else
-                {
-
-
-                }
+					}
+				}
         }
 
 
