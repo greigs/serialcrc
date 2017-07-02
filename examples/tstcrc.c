@@ -228,7 +228,7 @@ int main(void) {
 
 
 	char bufsm2[8];
-	printf(" [1] ");
+	//printf(" [1] ");
 	unsigned int rdlensm2 = read(fd, bufsm2, sizeof(bufsm2));
 	if (rdlensm2 < 1)
 	{
@@ -242,7 +242,7 @@ int main(void) {
 		(strncmp("E%%IGNOR", bufsm2, 8) == 0) ||
 		(strncmp("%%IGNORE", bufsm2, 8) == 0))
 	{
-		printf(" [2] ");
+		//printf(" [2] ");
 		rdlensm2 = read(fd, bufsm2, sizeof(bufsm2));
 		if (rdlensm2 < 1)
 		{
@@ -250,14 +250,16 @@ int main(void) {
 	}
 	int totalBytes = 0;
 
-	char buf[16384];
+	char buf[240];
 	char smallbuf[8];
 	char tinybuf[8];
 
-	printf(" [3] ");
+	uint32_t prevcrcResult = -1;
+	
+	//printf(" [3] ");
 	while (1)
 	{
-		printf("\n");
+		//printf("\n");
 		buf[sizeof(buf) - 26] = ' ';
 		buf[sizeof(buf) - 25] = ' ';
 		buf[sizeof(buf) - 24] = ' ';
@@ -271,23 +273,16 @@ int main(void) {
 		
 
 		int tries = 0;
-		while ((strncmp("!rtppl", bufsm, 6) != 0) &&
-			(strncmp("rtppla", bufsm, 6) != 0) &&
-			(strncmp("tpplay", bufsm, 6) != 0) &&
-			(strncmp("pplay1", bufsm, 6) != 0) &&
-			(strncmp("play1.", bufsm, 6) != 0) &&
-			(strncmp("lay1.0", bufsm, 6) != 0))
+		while ((strncmp("UklGRn", bufsm, 6) != 0) &&
+			(strncmp("klGRn7", bufsm, 6) != 0) &&
+			(strncmp("lGRn7I", bufsm, 6) != 0) &&
+			(strncmp("GRn7IJ", bufsm, 6) != 0) &&
+			(strncmp("Rn7IJA", bufsm, 6) != 0) &&
+			(strncmp("n7IJA1", bufsm, 6) != 0))
 		{
-			//                      printf(bufsm);
-			//                        printf(" %d ",(strcmp("!rtppl", bufsm)));
-			//                        printf(" %d ",(strcmp("rtppla", bufsm)));
-			//                        printf(" %d ",(strcmp("tpplay", bufsm)));
-			//                        printf(" %d ",(strcmp("pplay1", bufsm)));
-			//                        printf(" %d ",(strcmp("play1.", bufsm)));
-			//                        printf(" %d ",(strcmp("lay1.0", bufsm)));
 
-			//                        printf("\n");
 			rdlensm = read(fd, bufsm, sizeof(bufsm));
+			//printf("%s\n",bufsm);
 			if (rdlensm < 1)
 			{
 			}
@@ -307,45 +302,46 @@ int main(void) {
 
 		int read_bytes;
 
-		if ((strncmp("!rtppl", bufsm, 6) == 0)) {
+		if ((strncmp("!UklGRn", bufsm, 6) == 0)) {
 			read_bytes = read(fd, bufsm, 5);
 			if (read_bytes < 1)
 			{
 			}
 		}
-		else if ((strncmp("rtppla", bufsm, 6) == 0)) {
+		else if ((strncmp("klGRn7", bufsm, 6) == 0)) {
 			read_bytes = read(fd, bufsm, 4);
 			if (read_bytes < 1)
 			{
 			}
 		}
-		else if ((strncmp("tpplay", bufsm, 6) == 0)) {
+		else if ((strncmp("lGRn7I", bufsm, 6) == 0)) {
 			read_bytes = read(fd, bufsm, 3);
 			if (read_bytes < 1)
 			{
 			}
 		}
-		else if ((strncmp("pplay1", bufsm, 6) == 0)) {
+		else if ((strncmp("GRn7IJ", bufsm, 6) == 0)) {
 			read_bytes = read(fd, bufsm, 2);
 			if (read_bytes < 1)
 			{
 			}
 		}
-		else if ((strncmp("play1.", bufsm, 6) == 0)) {
+		else if ((strncmp("Rn7IJA", bufsm, 6) == 0)) {
 			read_bytes = read(fd, bufsm, 1);
 			if (read_bytes < 1)
 			{
 			}
 		}
-		int first = 1;
-		int minus = 11;
-		int minus2 = (int)sizeof(smallbuf);
 		int minus3 = 0;
 
+		char crc[12 * sizeof(char)];
+		char crcPassedIn[8];
+		char crcsmall[8];
+		
+		
 		while (1)
 		{
 
-			
 
 			/* simple noncanonical input */
 			int i = 0, j = 0;
@@ -353,13 +349,14 @@ int main(void) {
 			{
 				buf[i] = '-';
 			}
+			
 			i = 0;
-
 
 			int readEnough = 0, crcString = 0;
 
-			while (i < ((int)sizeof(buf) - minus2) && !readEnough)
-			{
+			while (i < ((int)sizeof(buf) + 1) && !readEnough)
+			{			
+				
 				int rdlen;
 
 				rdlen = read(fd, smallbuf, (int)sizeof(smallbuf));
@@ -367,9 +364,6 @@ int main(void) {
 
 					for (j = 0; j < rdlen; j++) {
 						buf[i + j] = smallbuf[j];
-					}
-					for (j = rdlen; j < (int)sizeof(smallbuf); j++) {
-						smallbuf[j] = ' ';
 					}
 
 					// copy first 8 bytes
@@ -382,7 +376,10 @@ int main(void) {
 					tinybuf[5] = smallbuf[5];
 					tinybuf[6] = smallbuf[6];
 					tinybuf[7] = smallbuf[7];
-
+					
+					for (j = 0; j < (int)sizeof(smallbuf); j++) {
+						smallbuf[j] = '-';
+					}					
 
 					// issue: want to increase the small buffer
 					if ((strncmp("%IGNORE%", tinybuf, 8) == 0) ||
@@ -395,41 +392,29 @@ int main(void) {
 						(strncmp("%%IGNORE", tinybuf, 8) == 0))
 					{
 						//printf("b");
-						
-						break;
+						i = 0;
 					}
 					else
 					{
 
+						// get to the starting position
+						
 						i += rdlen;
 
 						
-						if (i >= ((int)(sizeof(buf) - minus)))
+						if (i >= ((int)(sizeof(buf))))
 						{
 							readEnough = 1;
 							//printf("\nREADENOUGH\n");
 							//printf(buf);
-							if (first)
-							{
-								if ((char)buf[sizeof(buf) - 26] == 'C' && (char)buf[sizeof(buf) - 25] == 'R' && (char)buf[sizeof(buf) - 24] == 'C')
-								{
-									crcString = 1;
-									//printf("1\n");
-									first = 0;
-									minus = 0;
-									minus2 = 0;
 
-								}
-							}
-							else
+							if ((char)buf[sizeof(buf) - 12] == 'C' && (char)buf[sizeof(buf) - 11] == 'R' && (char)buf[sizeof(buf) - 10] == 'C')
 							{
-								if ((char)buf[sizeof(buf) - 11] == 'C' && (char)buf[sizeof(buf) - 10] == 'R' && (char)buf[sizeof(buf) - 9] == 'C')
-								{
-									crcString = 1;
-									//printf("1\n");
-
-								}
+								crcString = 1;
+								//printf("2\n");
 							}
+
+							
 						}
 						//printf("0");
 					}
@@ -444,35 +429,48 @@ int main(void) {
 
 			if (crcString)
 			{
+				minus3 = 0;
 				totalBytes += sizeof(buf);
 
 
 				//if (!first){ minus3 = 16;}
-				uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 26 + minus3);
+				uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 12 + minus3);
+
 				//printf("\n%d\n", sizeof(buf) - 26 + minus3);
 				//printf("%d", crcResult);
-				char crcsmall[8];
+
+				//write crcResult into crcsmall as a string
 				sprintf(crcsmall, "%08lX", (unsigned long)crcResult);
-				char crcPassedIn[8];
-				crcPassedIn[0] = buf[sizeof(buf) - 23 + minus3];
-				crcPassedIn[1] = buf[sizeof(buf) - 22 + minus3];
-				crcPassedIn[2] = buf[sizeof(buf) - 21 + minus3];
-				crcPassedIn[3] = buf[sizeof(buf) - 20 + minus3];
-				crcPassedIn[4] = buf[sizeof(buf) - 19 + minus3];
-				crcPassedIn[5] = buf[sizeof(buf) - 18 + minus3];
-				crcPassedIn[6] = buf[sizeof(buf) - 17 + minus3];
-				crcPassedIn[7] = buf[sizeof(buf) - 16 + minus3];
+
+				crcPassedIn[0] = buf[sizeof(buf) - 8 + minus3];
+				crcPassedIn[1] = buf[sizeof(buf) - 7 + minus3];
+				crcPassedIn[2] = buf[sizeof(buf) - 6 + minus3];
+				crcPassedIn[3] = buf[sizeof(buf) - 5 + minus3];
+				crcPassedIn[4] = buf[sizeof(buf) - 4 + minus3];
+				crcPassedIn[5] = buf[sizeof(buf) - 3 + minus3];
+				crcPassedIn[6] = buf[sizeof(buf) - 2 + minus3];
+				crcPassedIn[7] = buf[sizeof(buf) - 1 + minus3];
 				int ok = strncmp(crcsmall, crcPassedIn, 8) == 0;
 				if (ok) {
-					char crc[18 * sizeof(char)];
+
 					sprintf(crc, "%08lX CRC OK!!!", (unsigned long)crcResult);
 					//printf("THISCRC %s\n", crc);
 					wlen = write(fd, crc, 18);
-					minus3 = 15;
+					//minus3 = 15;
+					
+					if (prevcrcResult != crcResult)
+					{
+						int index = 0;
+						for (index = 0; index< ((int)sizeof(buf) - 12); index++)
+						{
+							printf("%c",buf[index]);
+						}
+						prevcrcResult = crcResult;
+					}
 
 				}
 				else {
-					printf("\nExpected %s, got %s  \n", crcsmall, crcPassedIn);
+					//printf("\nExpected %s, got %s  \n", crcsmall, crcPassedIn);
 					wlen = write(fd, "00000000 CRC ERROR", 18);
 				}
 
