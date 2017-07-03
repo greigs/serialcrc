@@ -261,13 +261,12 @@
 		
 		int first = 1;
 
-		uint32_t prevcrcResult = -1;
 		
 		
 		while (1)
 		{
 			
-			printf(" [3] ");
+			//printf(" [3] ");
 			//printf("\n");
 			buf[sizeof(buf) - 26] = ' ';
 			buf[sizeof(buf) - 25] = ' ';
@@ -351,11 +350,7 @@
 			}
 			
 			// read another 5 bytes to make up to 16
-			read_bytes = read(fd, bufsm, 5);
-			
-			int minus3 = 0;
-
-			
+			read_bytes = read(fd, bufsm, 5);						
 			
 			while (1)
 			{
@@ -393,8 +388,9 @@
 
 
 				int readEnough = 0, crcString = 0;
+				int crccheckcount = 0;
 
-				while (i < ((int)sizeof(buf)) && !readEnough)
+				while (!readEnough)
 				{			
 					
 					int rdlen;
@@ -410,7 +406,6 @@
 						for (j = 0; j < rdlen; j++) {
 							buf[i + j] = smallbuf[j];
 						}
-
 
 						// issue: want to increase the small buffer
 						if ((strncmp("%IGNORE%", smallbuf, 8) == 0) ||
@@ -436,20 +431,18 @@
 							
 							if (i >= ((int)(sizeof(buf))))
 							{
-								readEnough = 1;
 								//printf("\nREADENOUGH\n");
 								//printf(buf);
 
 								if ((char)buf[sizeof(buf) - 12] == 'C' && (char)buf[sizeof(buf) - 11] == 'R' && (char)buf[sizeof(buf) - 10] == 'C')
 								{
-									crcString = 1;
-									
-									
-
-									
+									crccheckcount++;
+									if (crccheckcount == 2){
+										crcString = 1;
+										readEnough = 1;
+									}									
 									//printf("2\n");
 								}
-
 								
 							}
 							//printf("0");
@@ -465,28 +458,27 @@
 
 				if (crcString)
 				{
-					minus3 = 0;
 					totalBytes += sizeof(buf);
 
 
 					//if (!first){ minus3 = 16;}
-					uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 12 + minus3);
+					uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 12);
 					
 
-					//printf("\n%d\n", sizeof(buf) - 26 + minus3);
+					//printf("\n%d\n", sizeof(buf) - 26);
 					//printf("%d", crcResult);
 
 					//write crcResult into crcsmall as a string
 					sprintf(crcsmall, "%08lX", (unsigned long)crcResult);
 
-					crcPassedIn[0] = buf[sizeof(buf) - 8 + minus3];
-					crcPassedIn[1] = buf[sizeof(buf) - 7 + minus3];
-					crcPassedIn[2] = buf[sizeof(buf) - 6 + minus3];
-					crcPassedIn[3] = buf[sizeof(buf) - 5 + minus3];
-					crcPassedIn[4] = buf[sizeof(buf) - 4 + minus3];
-					crcPassedIn[5] = buf[sizeof(buf) - 3 + minus3];
-					crcPassedIn[6] = buf[sizeof(buf) - 2 + minus3];
-					crcPassedIn[7] = buf[sizeof(buf) - 1 + minus3];
+					crcPassedIn[0] = buf[sizeof(buf) - 8];
+					crcPassedIn[1] = buf[sizeof(buf) - 7];
+					crcPassedIn[2] = buf[sizeof(buf) - 6];
+					crcPassedIn[3] = buf[sizeof(buf) - 5];
+					crcPassedIn[4] = buf[sizeof(buf) - 4];
+					crcPassedIn[5] = buf[sizeof(buf) - 3];
+					crcPassedIn[6] = buf[sizeof(buf) - 2];
+					crcPassedIn[7] = buf[sizeof(buf) - 1];
 					int ok = strncmp(crcsmall, crcPassedIn, 8) == 0;
 					if (ok) {
 
@@ -495,21 +487,13 @@
 						wlen = write(fd, crc, 18);
 						//minus3 = 15;
 						
-						if (prevcrcResult != crcResult)
-						{
 
-					
-														int index = 0;
-									for (index = 0; index< 20; index++)
-									{
-										printf("%c",buf[index]);
-									}
-									
-									printf("\n");
-										
-					
-							prevcrcResult = crcResult;
+						int index = 0;
+						for (index = 0; index< (int)sizeof(buf) - 12; index++)
+						{
+							printf("%c",buf[index]);
 						}
+					
 
 					}
 					else {
