@@ -443,6 +443,11 @@
 									}									
 									//printf("2\n");
 								}
+								else
+								{
+									i = 0;
+									break;									
+								}
 								
 							}
 							//printf("0");
