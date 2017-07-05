@@ -55,6 +55,72 @@
 
 
 	#define DISPLAY_STRING
+	
+			
+	#define WHITESPACE 64
+	#define EQUALS     65
+	#define INVALID    66
+
+	static const unsigned char d[] = {
+		66,66,66,66,66,66,66,66,66,66,64,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+		66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,62,66,66,66,63,52,53,
+		54,55,56,57,58,59,60,61,66,66,66,65,66,66,66, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+		10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,66,66,66,66,66,66,26,27,28,
+		29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,66,66,
+		66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+		66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+		66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+		66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+		66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,
+		66,66,66,66,66,66
+	};
+
+	int base64decode (char *in, size_t inLen, unsigned char *out, size_t *outLen) { 
+		char *end = in + inLen;
+		char iter = 0;
+		size_t buf2 = 0;
+		size_t len = 0;
+		
+		while (in < end) {
+			unsigned char c = d[(int)(*in)];
+			in++;
+			//printf("%c",c);
+			switch (c) {
+			case WHITESPACE: continue;   /* skip whitespace */
+			case INVALID:    return 1;   /* invalid input, return error */
+			case EQUALS:                 /* pad character, end of data */
+				in = end;
+				continue;
+			default:
+				buf2 = buf2 << 6 | c;
+				iter++; // increment the number of iteration
+				/* If the buffer is full, split it into bytes */
+				if (iter == 4) {
+					if ((len += 3) > *outLen) return 99; /* buffer overflow */
+					*(out++) = (buf2 >> 16) & 255;
+					*(out++) = (buf2 >> 8) & 255;
+					*(out++) = buf2 & 255;
+					buf2 = 0; iter = 0;
+
+				}   
+			}
+		}
+	   
+		if (iter == 3) {
+			if ((len += 2) > *outLen) return 1; /* buffer overflow */
+			*(out++) = (buf2 >> 10) & 255;
+			*(out++) = (buf2 >> 2) & 255;
+		}
+		else if (iter == 2) {
+			if (++len > *outLen) return 1; /* buffer overflow */
+			*(out++) = (buf2 >> 4) & 255;
+		}
+
+		*outLen = len; /* modify to reflect the actual output size */
+		return 0;
+	}
+				
+	
 
 	int set_interface_attribs(int fd, int speed)
 	{
@@ -196,10 +262,6 @@
 
 	int main(void) {
 
-
-
-
-
 		const char *portname = "/dev/ttyGS0";
 		int fd;
 		unsigned int wlen;
@@ -228,7 +290,7 @@
 
 
 		char bufsm2[8] = {0};
-		char buf[240] = {0};
+		char buf[1056] = {0};
 		char smallbuf[8] = {0};
 		char crc[18] = {0};
 		char crcPassedIn[8] = {0};
@@ -302,8 +364,8 @@
 				tries += 1;
 				if (tries == 100)
 				{
-					printf(" ALLTRIES\n ");
-					printf("00000000 CRC ERROR\n");
+					//printf(" ALLTRIES\n ");
+					//printf("00000000 CRC ERROR\n");
 					wlen = write(fd, "00000000 CRC ERROR", 18);
 					tcdrain(fd);    /* delay for output */
 					wlen = write(fd, "%READY%", 7);
@@ -464,8 +526,7 @@
 				if (crcString)
 				{
 					totalBytes += sizeof(buf);
-
-
+					
 					//if (!first){ minus3 = 16;}
 					uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 12);
 					
@@ -493,11 +554,40 @@
 						//minus3 = 15;
 						
 
-						int index = 0;
-						for (index = 0; index< (int)sizeof(buf) - 12; index++)
-						{
-							printf("%c",buf[index]);
-						}
+						//int index = 0;
+						//for (index = 0; index< (int)sizeof(buf) - 12; index++)
+						//{
+							
+							//int base64decode (char *in, size_t inLen, unsigned char *out, size_t *outLen)
+							unsigned char *out = (unsigned char *)malloc((int)sizeof(buf) + 1);
+							size_t sizeout1 = (int)sizeof(buf) + 1;
+							size_t * sizeout = &sizeout1;
+							size_t len = (size_t)sizeof(buf) - 12;
+							//char* c = (char*)malloc(6*sizeof(char));
+							//strcpy(c, "hello\0");
+							char buf3[sizeof(buf) - 12 + 1] = {0};
+							int cnt = 0;
+ 							for (cnt = 0; cnt< (int)sizeof(buf) - 12; cnt++)
+							{
+								buf3[cnt] = buf[cnt];
+							}
+							char * instr = &buf3[0];
+							//printf("%s\n",instr);
+							int retval = base64decode(instr, len, out, sizeout);
+							if (retval == 0)
+							{
+								int charcnt = 0;
+								for (charcnt = 0; charcnt < sizeout1; charcnt++){
+									putchar(out[charcnt]);
+								}
+								
+							}
+							//printf("%d\n",retval);
+							//printf("sizeout:%d\n",*sizeout);
+							//printf("%s",out);
+							
+							//printf("%c",buf[index]);
+						//}
 					
 
 					}
@@ -519,6 +609,8 @@
 				}
 			}
 		}
+
+		
 
 
 	}  /* main (tstcrc.c) */
