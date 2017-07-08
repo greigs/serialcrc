@@ -290,11 +290,13 @@
 
 
 		char bufsm2[8] = {0};
-		char buf[1056] = {0};
+		char buf[1056 + 12] = {0};
 		char smallbuf[8] = {0};
 		char crc[18] = {0};
 		char crcPassedIn[8] = {0};
 		char crcsmall[8] = {0};
+		char setCount[12] = {0};
+		char prevSetCount[12] = {0};
 
 		
 		//printf(" [1] ");
@@ -330,9 +332,9 @@
 			
 			//printf(" [3] ");
 			//printf("\n");
-			buf[sizeof(buf) - 26] = ' ';
-			buf[sizeof(buf) - 25] = ' ';
-			buf[sizeof(buf) - 24] = ' ';
+			//buf[sizeof(buf) - 26] = ' ';
+			//buf[sizeof(buf) - 25] = ' ';
+			//buf[sizeof(buf) - 24] = ' ';
 
 			buf[0] = ' ';
 			buf[1] = ' ';
@@ -496,10 +498,10 @@
 								//printf("\nREADENOUGH\n");
 								//printf(buf);
 
-								if ((char)buf[sizeof(buf) - 12] == 'C' && (char)buf[sizeof(buf) - 11] == 'R' && (char)buf[sizeof(buf) - 10] == 'C')
+								if ((char)buf[sizeof(buf) - 12 - 12] == 'C' && (char)buf[sizeof(buf) - 11 - 12] == 'R' && (char)buf[sizeof(buf) - 10 - 12] == 'C')
 								{
 									crccheckcount++;
-									if (crccheckcount == 2){
+									if (crccheckcount == 3){
 										crcString = 1;
 										readEnough = 1;
 									}									
@@ -528,7 +530,7 @@
 					totalBytes += sizeof(buf);
 					
 					//if (!first){ minus3 = 16;}
-					uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 12);
+					uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 12 - 12);
 					
 
 					//printf("\n%d\n", sizeof(buf) - 26);
@@ -537,14 +539,14 @@
 					//write crcResult into crcsmall as a string
 					sprintf(crcsmall, "%08lX", (unsigned long)crcResult);
 
-					crcPassedIn[0] = buf[sizeof(buf) - 8];
-					crcPassedIn[1] = buf[sizeof(buf) - 7];
-					crcPassedIn[2] = buf[sizeof(buf) - 6];
-					crcPassedIn[3] = buf[sizeof(buf) - 5];
-					crcPassedIn[4] = buf[sizeof(buf) - 4];
-					crcPassedIn[5] = buf[sizeof(buf) - 3];
-					crcPassedIn[6] = buf[sizeof(buf) - 2];
-					crcPassedIn[7] = buf[sizeof(buf) - 1];
+					crcPassedIn[0] = buf[sizeof(buf) - 8 - 12];
+					crcPassedIn[1] = buf[sizeof(buf) - 7 - 12];
+					crcPassedIn[2] = buf[sizeof(buf) - 6 - 12];
+					crcPassedIn[3] = buf[sizeof(buf) - 5 - 12];
+					crcPassedIn[4] = buf[sizeof(buf) - 4 - 12];
+					crcPassedIn[5] = buf[sizeof(buf) - 3 - 12];
+					crcPassedIn[6] = buf[sizeof(buf) - 2 - 12];
+					crcPassedIn[7] = buf[sizeof(buf) - 1 - 12];
 					int ok = strncmp(crcsmall, crcPassedIn, 8) == 0;
 					if (ok) {
 
@@ -562,26 +564,42 @@
 							unsigned char *out = (unsigned char *)malloc((int)sizeof(buf) + 1);
 							size_t sizeout1 = (int)sizeof(buf) + 1;
 							size_t * sizeout = &sizeout1;
-							size_t len = (size_t)sizeof(buf) - 12;
+							size_t len = (size_t)sizeof(buf) - 12 - 12;
 							//char* c = (char*)malloc(6*sizeof(char));
 							//strcpy(c, "hello\0");
-							char buf3[sizeof(buf) - 12 + 1] = {0};
+							char buf3[sizeof(buf) - 12 - 12 + 1] = {0};
 							int cnt = 0;
- 							for (cnt = 0; cnt< (int)sizeof(buf) - 12; cnt++)
+ 							for (cnt = 0; cnt< (int)sizeof(buf) - 12 - 12; cnt++)
 							{
 								buf3[cnt] = buf[cnt];
 							}
 							char * instr = &buf3[0];
 							//printf("%s\n",instr);
 							int retval = base64decode(instr, len, out, sizeout);
-							if (retval == 0)
+
+							
+							setCount[0] = buf[sizeof(buf) - 12];
+							setCount[1] = buf[sizeof(buf) - 11];
+							setCount[2] = buf[sizeof(buf) - 10];
+							setCount[3] = buf[sizeof(buf) - 9];
+							
+							if (strncmp(setCount, prevSetCount, 12) != 0)
 							{
-								int charcnt = 0;
-								for (charcnt = 0; charcnt < sizeout1; charcnt++){
-									putchar(out[charcnt]);
-								}
-								
+								if (retval == 0)
+								{
+									int charcnt = 0;
+									for (charcnt = 0; charcnt < sizeout1; charcnt++){
+										putchar(out[charcnt]);
+									}
+								}							
 							}
+							
+							prevSetCount[0] = setCount[0];
+							prevSetCount[1] = setCount[1];
+							prevSetCount[2] = setCount[2];
+							prevSetCount[3] = setCount[3];
+							
+							
 							//printf("%d\n",retval);
 							//printf("sizeout:%d\n",*sizeout);
 							//printf("%s",out);
