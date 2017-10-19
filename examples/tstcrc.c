@@ -498,7 +498,7 @@
 								printf("\nREADENOUGH\n");
 								printf(buf);
 
-								if ((char)buf[sizeof(buf) - 12 - 12] == 'C' && (char)buf[sizeof(buf) - 11 - 12] == 'R' && (char)buf[sizeof(buf) - 10 - 12] == 'C')
+								if ((char)buf[sizeof(buf) - 12] == 'C' && (char)buf[sizeof(buf) - 11] == 'R' && (char)buf[sizeof(buf) - 10] == 'C')
 								{
 									crccheckcount++;
 									if (crccheckcount == 3){
@@ -530,7 +530,7 @@
 					totalBytes += sizeof(buf);
 					
 					//if (!first){ minus3 = 16;}
-					uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 12 - 12);
+					uint32_t crcResult = calc_crc32(buf, sizeof(buf) - 12);
 					
 
 					//printf("\n%d\n", sizeof(buf) - 26);
@@ -539,14 +539,14 @@
 					//write crcResult into crcsmall as a string
 					sprintf(crcsmall, "%08lX", (unsigned long)crcResult);
 
-					crcPassedIn[0] = buf[sizeof(buf) - 8 - 12];
-					crcPassedIn[1] = buf[sizeof(buf) - 7 - 12];
-					crcPassedIn[2] = buf[sizeof(buf) - 6 - 12];
-					crcPassedIn[3] = buf[sizeof(buf) - 5 - 12];
-					crcPassedIn[4] = buf[sizeof(buf) - 4 - 12];
-					crcPassedIn[5] = buf[sizeof(buf) - 3 - 12];
-					crcPassedIn[6] = buf[sizeof(buf) - 2 - 12];
-					crcPassedIn[7] = buf[sizeof(buf) - 1 - 12];
+					crcPassedIn[0] = buf[sizeof(buf) - 8];
+					crcPassedIn[1] = buf[sizeof(buf) - 7];
+					crcPassedIn[2] = buf[sizeof(buf) - 6];
+					crcPassedIn[3] = buf[sizeof(buf) - 5];
+					crcPassedIn[4] = buf[sizeof(buf) - 4];
+					crcPassedIn[5] = buf[sizeof(buf) - 3];
+					crcPassedIn[6] = buf[sizeof(buf) - 2];
+					crcPassedIn[7] = buf[sizeof(buf) - 1];
 					int ok = strncmp(crcsmall, crcPassedIn, 8) == 0;
 					if (ok) {
 
@@ -564,12 +564,12 @@
 							unsigned char *out = (unsigned char *)malloc((int)sizeof(buf) + 1);
 							size_t sizeout1 = (int)sizeof(buf) + 1;
 							size_t * sizeout = &sizeout1;
-							size_t len = (size_t)sizeof(buf) - 12 - 12;
+							size_t len = (size_t)sizeof(buf) - 12;
 							//char* c = (char*)malloc(6*sizeof(char));
 							//strcpy(c, "hello\0");
-							char buf3[sizeof(buf) - 12 - 12 + 1] = {0};
+							char buf3[sizeof(buf) - 12 + 1] = {0};
 							int cnt = 0;
- 							for (cnt = 0; cnt< (int)sizeof(buf) - 12 - 12; cnt++)
+ 							for (cnt = 0; cnt< (int)sizeof(buf) - 12; cnt++)
 							{
 								buf3[cnt] = buf[cnt];
 							}
