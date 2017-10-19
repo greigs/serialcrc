@@ -495,8 +495,8 @@
 							
 							if (i >= ((int)(sizeof(buf))))
 							{
-								//printf("\nREADENOUGH\n");
-								//printf(buf);
+								printf("\nREADENOUGH\n");
+								printf(buf);
 
 								if ((char)buf[sizeof(buf) - 12 - 12] == 'C' && (char)buf[sizeof(buf) - 11 - 12] == 'R' && (char)buf[sizeof(buf) - 10 - 12] == 'C')
 								{
@@ -589,7 +589,7 @@
 								{
 									int charcnt = 0;
 									for (charcnt = 0; charcnt < sizeout1; charcnt++){
-										putchar(out[charcnt]);
+										//putchar(out[charcnt]);
 									}
 								}							
 							}
