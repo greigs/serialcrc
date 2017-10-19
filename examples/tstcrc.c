@@ -290,7 +290,7 @@
 
 
 		char bufsm2[8] = {0};
-		char buf[1056 + 12] = {0};
+		char buf[1044 + 12] = {0};
 		char smallbuf[8] = {0};
 		char crc[18] = {0};
 		char crcPassedIn[8] = {0};
