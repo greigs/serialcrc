@@ -321,7 +321,7 @@
 		}
 		int totalBytes = 0;
 
-
+        int messageCount = 0;
 		
 		int first = 1;
 
@@ -495,8 +495,8 @@
 							
 							if (i >= ((int)(sizeof(buf))))
 							{
-								printf("\nREADENOUGH\n");
-								printf(buf);
+								//printf("\nREADENOUGH\n");
+								//printf(buf);
 
 								if ((char)buf[sizeof(buf) - 12] == 'C' && (char)buf[sizeof(buf) - 11] == 'R' && (char)buf[sizeof(buf) - 10] == 'C')
 								{
@@ -559,6 +559,11 @@
 						//int index = 0;
 						//for (index = 0; index< (int)sizeof(buf) - 12; index++)
 						//{
+							int initialPacket = strncmp("ED0CE3CA", crcPassedIn, 8) == 0;
+							if (!initialPacket) {
+
+							// the first 2 messages sometimes get duplicated ,so count and compare the crcs
+							messageCount++;
 							
 							//int base64decode (char *in, size_t inLen, unsigned char *out, size_t *outLen)
 							unsigned char *out = (unsigned char *)malloc((int)sizeof(buf) + 1);
@@ -578,20 +583,28 @@
 							int retval = base64decode(instr, len, out, sizeout);
 
 							
-							setCount[0] = buf[sizeof(buf) - 12];
-							setCount[1] = buf[sizeof(buf) - 11];
-							setCount[2] = buf[sizeof(buf) - 10];
-							setCount[3] = buf[sizeof(buf) - 9];
+							setCount[0] = buf[sizeof(buf) - 4];
+							setCount[1] = buf[sizeof(buf) - 3];
+							setCount[2] = buf[sizeof(buf) - 2];
+							setCount[3] = buf[sizeof(buf) - 1];
 							
-							if (strncmp(setCount, prevSetCount, 12) != 0)
+							if (messageCount < 3 && strncmp(setCount, prevSetCount, 4) != 0)
 							{
 								if (retval == 0)
 								{
 									int charcnt = 0;
 									for (charcnt = 0; charcnt < sizeout1; charcnt++){
-										//putchar(out[charcnt]);
+										putchar(out[charcnt]);
 									}
+									printf("\n");
 								}							
+							}
+							if  (messageCount >= 3){
+									int charcnt = 0;
+									for (charcnt = 0; charcnt < sizeout1; charcnt++){
+										putchar(out[charcnt]);
+									}	
+									printf("\n");							
 							}
 							
 							prevSetCount[0] = setCount[0];
@@ -603,7 +616,12 @@
 							//printf("%d\n",retval);
 							//printf("sizeout:%d\n",*sizeout);
 							//printf("%s",out);
-							
+							}
+							else
+							{
+								//printf("\n");
+								//printf("%s","NO");
+							}
 							//printf("%c",buf[index]);
 						//}
 					
