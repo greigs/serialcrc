@@ -45,6 +45,9 @@
 	#include <string.h>
 	#include <termios.h>
 	#include <unistd.h>
+	#include <fcntl.h>
+	#include <sys/types.h>
+	#include <sys/stat.h>
 
 
 
@@ -262,6 +265,17 @@
 
 	int main(void) {
 
+		int pipefd;
+		char * myfifo = "/tmp/myfifo";
+
+		/* create the FIFO (named pipe) */
+		mkfifo(myfifo, 0666);
+
+		/* write to the FIFO */
+		pipefd = open(myfifo, O_WRONLY);
+
+
+
 		const char *portname = "/dev/ttyGS0";
 		int fd;
 		unsigned int wlen;
@@ -321,7 +335,7 @@
 		}
 		int totalBytes = 0;
 
-        int messageCount = 0;
+                int messageCount = 0;
 		
 		int first = 1;
 
@@ -594,17 +608,33 @@
 								{
 									int charcnt = 0;
 									for (charcnt = 0; charcnt < sizeout1; charcnt++){
-										putchar(out[charcnt]);
+										//putchar(out[charcnt]);
+
+									    char bytes[] = {out[charcnt]};
+									    int lenPipeBytes = sizeof(bytes);
+
+									    //printf("%d",len);
+									    write(pipefd, &lenPipeBytes, sizeof(int));
+									    write(pipefd, bytes, lenPipeBytes);
+
+
 									}
-									printf("\n");
+									//printf("\n");
 								}							
 							}
 							if  (messageCount >= 3){
 									int charcnt = 0;
 									for (charcnt = 0; charcnt < sizeout1; charcnt++){
-										putchar(out[charcnt]);
+										//putchar(out[charcnt]);
+
+									    char bytes[] = {out[charcnt]};
+									    int lenPipeBytes = sizeof(bytes);
+
+									    //printf("%d",len);
+									    write(pipefd, &lenPipeBytes, sizeof(int));
+									    write(pipefd, bytes, lenPipeBytes);
 									}	
-									printf("\n");							
+									//printf("\n");							
 							}
 							
 							prevSetCount[0] = setCount[0];
